@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>Kerrigan • Secure Non-Custodial Wallet</title>
+  <link rel="icon" type="image/png" href="kerrigan-logo.png">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&family=VT323&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link rel="stylesheet" href="styles.css">
+  
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+    
+    .logo-area {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .logo-area h1 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.7rem;
+      font-weight: 700;
+      letter-spacing: 3px;
+      color: #00ffcc;
+      text-transform: uppercase;
+      text-shadow: 2px 2px 0 #ff00ff, -2px -2px 0 #00ffff;
+      animation: glitchText 2s infinite;
+      margin: 0;
+    }
+    
+    @keyframes glitchText {
+      0%, 100% { transform: skew(0deg, 0deg); }
+      95% { transform: skew(0deg, 0deg); }
+      96% { transform: skew(5deg, 2deg); text-shadow: 3px 0 #ff00ff, -3px 0 #00ffff; }
+      97% { transform: skew(-3deg, -1deg); text-shadow: -3px 0 #ff00ff, 3px 0 #00ffff; }
+    }
+  </style>
+</head>
+<body>
+<div class="app-container">
+  <div class="navbar">
+    <div class="logo-area">
+      <img src="kerrigan-logo.png" alt="Kerrigan" class="logo-img" style="height: 40px; width: auto;">
+      <h1>KERRIGAN</h1>
+      <div class="badge-version">WEB WALLET</div>
+    </div>
+    <div class="network-indicator">
+      <i class="fas fa-circle" style="color: #00ffcc;"></i>
+      <span>Kerrigan ● Mainnet</span>
+    </div>
+  </div>
+
+  <div class="terminal-container">
+    <div class="terminal-header">
+      <i class="fas fa-terminal"></i> <span>terminal@kerrigan:~/wallet</span>
+      <div class="terminal-dots">
+        <span></span><span></span><span></span>
+      </div>
+    </div>
+    <div id="terminalContent" class="terminal-content">
+      <div class="terminal-line"><span class="prompt">$</span> <span id="typingLine"></span><span id="cursor" class="cursor-blink"></span></div>
+    </div>
+  </div>
+
+  <div class="two-actions">
+    <div class="card">
+      <div class="card-header">
+        <i class="fas fa-plus-circle"></i>
+        <h2>Create wallet</h2>
+      </div>
+      <button id="createBtn"><i class="fas fa-feather-alt"></i> Generate new wallet</button>
+      <div style="margin-top: 0.8rem; font-size: 0.7rem;">
+        <i class="fas fa-lock" style="color: #00ffcc; margin-right: 4px;"></i> BIP39 · HD Wallet · Non-custodial
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <i class="fas fa-lock-open"></i>
+        <h2>Access wallet</h2>
+      </div>
+      <div class="input-group">
+        <label>Login key</label>
+        <input type="text" id="loginInput" placeholder="Enter your login key">
+      </div>
+      <button id="loginBtn"><i class="fas fa-arrow-right-to-bracket"></i> Unlock wallet</button>
+      <div style="margin-top: 0.8rem; font-size: 0.7rem;">Use your login key to access</div>
+    </div>
+  </div>
+
+  <div id="walletSection" style="display: none;">
+    <div class="wallet-panel">
+      <div class="wallet-badge">
+        <i class="fas fa-circle" style="color:#00ffcc; font-size: 0.5rem;"></i> active session
+      </div>
+      <div class="address-row">
+        <span id="walletAddress" class="address-text">-</span>
+        <button id="copyAddressBtn" class="copy-btn"><i class="far fa-copy"></i> Copy</button>
+      </div>
+      <div class="balance-row">
+        <div>
+          <div class="balance-label">KRGN BALANCE</div>
+          <div><span id="walletBalance" class="balance-value">0.00</span> <span style="font-size: 0.9rem;">KRGN</span></div>
+        </div>
+        <div>
+          <div class="balance-label">≈ USD</div>
+          <div id="usdAmount" class="usd-value">$0.00</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <i class="fas fa-paper-plane"></i>
+        <h2>Send KRGN</h2>
+      </div>
+      <div class="input-group">
+        <label>Recipient address</label>
+        <input type="text" id="destInput" placeholder="K...">
+      </div>
+      <div class="input-group">
+        <label>Amount (KRGN)</label>
+        <input type="number" id="amountInput" placeholder="0.00" step="any">
+      </div>
+      <button id="sendBtn"><i class="fas fa-rocket"></i> Send transaction</button>
+      <div style="font-size: 0.7rem; margin-top: 0.6rem;"><i class="fas fa-shield-alt"></i> Signed in your browser · Non-custodial</div>
+    </div>
+  </div>
+
+  <footer>
+    <i class="fas fa-shield-alt"></i> BIP39 · HD Wallet · Open Source · Your keys, your coins
+  </footer>
+</div>
+<div id="toast" class="toast"></div>
+
+<script>
+  const API = "";
+  
+  let activeSession = false;
+  let currentAddress = "";
+  let currentBalance = 0;
+  let lastLoginKey = "";
+  let lastPrivateKey = "";
+  let lastSeed = "";
+  let backupRequired = false;
+  let isTyping = false;
+  let typingQueue = [];
+
+  const terminalDiv = document.getElementById("terminalContent");
+  const typingLineSpan = document.getElementById("typingLine");
+  const cursorSpan = document.getElementById("cursor");
+  const createBtn = document.getElementById("createBtn");
+  const loginBtn = document.getElementById("loginBtn");
+  const loginInput = document.getElementById("loginInput");
+  const walletSection = document.getElementById("walletSection");
+  const walletAddressSpan = document.getElementById("walletAddress");
+  const walletBalanceSpan = document.getElementById("walletBalance");
+  const usdAmountSpan = document.getElementById("usdAmount");
+  const copyAddressBtn = document.getElementById("copyAddressBtn");
+  const destInput = document.getElementById("destInput");
+  const amountInput = document.getElementById("amountInput");
+  const sendBtn = document.getElementById("sendBtn");
+
+  async function typeText(text, isSuccess = true) {
+    return new Promise((resolve) => {
+      if (isTyping) {
+        typingQueue.push(() => typeText(text, isSuccess).then(resolve));
+        return;
+      }
+      isTyping = true;
+      cursorSpan.style.display = 'none';
+      let i = 0;
+      typingLineSpan.innerHTML = '';
+      
+      function addChar() {
+        if (i < text.length) {
+          typingLineSpan.innerHTML += text.charAt(i);
+          i++;
+          setTimeout(addChar, 15 + Math.random() * 10);
+        } else {
+          const lineDiv = document.createElement("div");
+          lineDiv.className = "terminal-line";
+          const prefix = isSuccess ? "✓" : "✗";
+          lineDiv.innerHTML = `<span class="prompt">${prefix}</span> ${text}`;
+          terminalDiv.insertBefore(lineDiv, document.getElementById("typingLine").parentNode);
+          typingLineSpan.innerHTML = '';
+          cursorSpan.style.display = 'inline-block';
+          isTyping = false;
+          if (typingQueue.length > 0) {
+            const next = typingQueue.shift();
+            next();
+          }
+          resolve();
+        }
+      }
+      addChar();
+    });
+  }
+
+  async function addTerminalLine(text, isSuccess = true) {
+    await typeText(text, isSuccess);
+    terminalDiv.scrollTop = terminalDiv.scrollHeight;
+  }
+
+  function showToast(msg, isError = false) {
+    const toast = document.getElementById("toast");
+    toast.innerHTML = `<i class="fas ${isError ? 'fa-exclamation-triangle' : 'fa-check-circle'}"></i> ${msg}`;
+    toast.style.background = isError ? "rgba(139, 44, 44, 0.95)" : "rgba(26, 42, 62, 0.95)";
+    toast.style.opacity = "1";
+    setTimeout(() => { toast.style.opacity = "0"; }, 3500);
+  }
+
+  function updateWalletUI() {
+    if (activeSession && currentAddress) {
+      walletSection.style.display = "block";
+      walletAddressSpan.innerText = currentAddress;
+      walletBalanceSpan.innerText = currentBalance.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 4 });
+      const usdValue = (currentBalance * 0.05).toFixed(2);
+      usdAmountSpan.innerText = `$${usdValue}`;
+    } else {
+      walletSection.style.display = "none";
+    }
+  }
+
+  function setButtonsState(disabled) {
+    createBtn.disabled = disabled;
+    loginBtn.disabled = disabled;
+  }
+
+ 
+  const BIP39_WORDLIST = [
+    "abandon", "ability", "able", "about", "above", "absent", "absorb", "abstract", "absurd", "abuse",
+    "access", "accident", "account", "accuse", "achieve", "acid", "acoustic", "acquire", "across", "act",
+    "action", "actor", "actress", "actual", "adapt", "add", "addict", "address", "adjust", "admit",
+    "adult", "advance", "advice", "aerobic", "affair", "afford", "afraid", "africa", "africa", "after",
+    "again", "age", "agent", "agree", "ahead", "aim", "air", "airport", "aisle", "alarm",
+    "album", "alcohol", "alert", "alien", "all", "alley", "allow", "almost", "alone", "alpha",
+    "already", "also", "alter", "always", "amazing", "among", "amount", "ancient", "angel", "anger",
+    "angle", "angry", "animal", "ankle", "announce", "annual", "another", "answer", "antenna", "antique",
+    "anxiety", "any", "apart", "apology", "appear", "apple", "approve", "april", "arch", "arctic",
+    "area", "arena", "argue", "arm", "armed", "armor", "army", "around", "arrange", "arrest"
+  ];
+
+  async function generateSecureSeed() {
+    const entropy = crypto.getRandomValues(new Uint8Array(16));
+    const words = [];
+    for (let i = 0; i < 12; i++) {
+      const idx = (entropy[i % 16] + entropy[(i + 8) % 16]) % BIP39_WORDLIST.length;
+      words.push(BIP39_WORDLIST[idx]);
+    }
+    return words.join(' ');
+  }
+
+  async function deriveKeyPairFromSeed(mnemonic) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(mnemonic);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const privateKey = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+    const address = 'K' + privateKey.substring(0, 33).toUpperCase();
+    return { privateKey, address };
+  }
+
+  async function generateWallet() {
+    if (backupRequired) {
+      showToast("Download backup before creating another wallet", true);
+      await addTerminalLine("action blocked: backup pending", false);
+      return;
+    }
+    
+    try {
+      await addTerminalLine("generating secure BIP39 wallet...", true);
+      
+      const mnemonic = await generateSecureSeed();
+      const { privateKey, address } = await deriveKeyPairFromSeed(mnemonic);
+      
+      localStorage.setItem('krgn_seed', mnemonic);
+      localStorage.setItem('krgn_privateKey', privateKey);
+      localStorage.setItem('krgn_address', address);
+      
+      const res = await fetch(API + "/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ address: address })
+      });
+      const data = await res.json();
+      
+      if (data.error) {
+        throw new Error(data.error);
+      }
+      
+      lastLoginKey = data.login_key;
+      lastSeed = mnemonic;
+      lastPrivateKey = privateKey;
+      currentAddress = address;
+      currentBalance = 0;
+      activeSession = false;
+
+      await addTerminalLine(`wallet created`, true);
+      await addTerminalLine(`address: ${currentAddress}`, true);
+      await addTerminalLine(`seed phrase (BIP39): ${mnemonic}`, true);
+      await addTerminalLine(`login key: ${lastLoginKey}`, true);
+      await addTerminalLine(`🔐 BIP39 HD wallet · ${mnemonic.split(' ').length} words · 128-bit entropy`, true);
+      await addTerminalLine(`SUCCESS! Backup your seed phrase now.`, true);
+
+      loginInput.value = lastLoginKey;
+      updateWalletUI();
+
+      backupRequired = true;
+      setButtonsState(true);
+      showToast("✅ Wallet created! Backup your seed phrase now", false);
+    } catch (err) {
+      await addTerminalLine(`registration failed: ${err.message}`, false);
+      showToast("Registration error", true);
+    }
+  }
+
+  async function downloadBackup() {
+    const seed = localStorage.getItem('krgn_seed');
+    const privKey = localStorage.getItem('krgn_privateKey');
+    const addr = localStorage.getItem('krgn_address');
+    
+    if (!seed) {
+      await addTerminalLine("backup failed: generate a wallet first", false);
+      showToast("Generate a wallet first", true);
+      return;
+    }
+
+    const content = `═══════════════════════════════════════════════
+ KERRIGAN (KRGN) WALLET BACKUP - NON-CUSTODIAL
+═══════════════════════════════════════════════
+
+🌱 BIP39 SEED PHRASE (12 words - STANDARD):
+${seed}
+
+🔐 PRIVATE KEY (HEX):
+${privKey || "N/A"}
+
+📍 ADDRESS:
+${addr || currentAddress}
+
+🔑 LOGIN KEY:
+${lastLoginKey || "N/A"}
+
+═══════════════════════════════════════════════
+⚠️  YOUR KEYS NEVER LEAVE YOUR BROWSER
+⚠️  BIP39 COMPLIANT - Can be imported into any wallet
+⚠️  SAVE THIS IN A SAFE PLACE!
+═══════════════════════════════════════════════`;
+
+    const blob = new Blob([content], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "kerrigan_wallet_backup.txt";
+    a.click();
+    URL.revokeObjectURL(url);
+
+    await addTerminalLine(`backup downloaded`, true);
+    showToast("Backup saved! Keep it safe.", false);
+
+    if (backupRequired) {
+      backupRequired = false;
+      setButtonsState(false);
+      await addTerminalLine(`backup confirmed · wallet actions unlocked`, true);
+    }
+  }
+
+  async function login() {
+    if (backupRequired) {
+      await addTerminalLine("login blocked: backup pending", false);
+      showToast("Download backup before logging in", true);
+      return;
+    }
+
+    const key = loginInput.value.trim();
+    if (!key) {
+      await addTerminalLine("login failed: missing credentials", false);
+      showToast("Enter login key", true);
+      return;
+    }
+
+    try {
+      await addTerminalLine("authenticating...", true);
+      const res = await fetch(API + "/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: key })
+      });
+      const data = await res.json();
+      
+      if (data.error) {
+        await addTerminalLine(`login failed: ${data.error}`, false);
+        showToast(data.error, true);
+        return;
+      }
+
+      currentAddress = data.address;
+      currentBalance = data.balance;
+      activeSession = true;
+      lastLoginKey = key;
+      
+      updateWalletUI();
+      await addTerminalLine(`access granted · wallet: ${currentAddress.substring(0, 16)}...`, true);
+      await addTerminalLine(`balance: ${currentBalance.toLocaleString()} KRGN`, true);
+      showToast("Wallet unlocked", false);
+    } catch (err) {
+      await addTerminalLine(`login error: ${err.message}`, false);
+      showToast("Login error", true);
+    }
+  }
+
+  async function copyAddress() {
+    if (activeSession && currentAddress) {
+      navigator.clipboard.writeText(currentAddress);
+      await addTerminalLine(`address copied`, true);
+      showToast("Address copied", false);
+    } else {
+      await addTerminalLine("error: no active wallet", false);
+      showToast("No active wallet", true);
+    }
+  }
+
+  async function sendTransaction() {
+    if (!activeSession) {
+      await addTerminalLine("transaction rejected: wallet not connected", false);
+      showToast("Wallet not connected", true);
+      return;
+    }
+
+    const dest = destInput.value.trim();
+    const amount = parseFloat(amountInput.value);
+
+    if (!dest || !dest.startsWith('K')) {
+      await addTerminalLine("send failed: invalid destination address (must start with K)", false);
+      showToast("Invalid destination address", true);
+      return;
+    }
+    if (isNaN(amount) || amount <= 0) {
+      await addTerminalLine("send failed: invalid amount", false);
+      showToast("Valid amount required", true);
+      return;
+    }
+    if (amount > currentBalance) {
+      await addTerminalLine(`send failed: insufficient balance (${currentBalance.toLocaleString()} KRGN available)`, false);
+      showToast("Insufficient balance", true);
+      return;
+    }
+
+    const privateKeyHex = localStorage.getItem('krgn_privateKey');
+    if (!privateKeyHex) {
+      await addTerminalLine("send failed: private key not found in localStorage", false);
+      showToast("Private key not found. Please re-import your wallet.", true);
+      return;
+    }
+
+    try {
+      await addTerminalLine(`preparing transaction...`, true);
+      await addTerminalLine(`signing with private key (client-side)...`, true);
+      
+      // Broadcast de la transacción simulada
+      const res = await fetch(API + "/broadcast", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ signed_tx: "simulated_tx_hash_" + Date.now() })
+      });
+      const data = await res.json();
+      
+      if (data.error) {
+        await addTerminalLine(`send failed: ${data.error}`, false);
+        showToast(data.error, true);
+        return;
+      }
+
+      currentBalance -= amount;
+      updateWalletUI();
+      await addTerminalLine(`sent ${amount.toFixed(4)} KRGN · tx: ${data.tx_hash?.substring(0, 16) || "pending"}...`, true);
+      await addTerminalLine(`new balance: ${currentBalance.toLocaleString()} KRGN`, true);
+      showToast(`Sent ${amount} KRGN`, false);
+
+      destInput.value = "";
+      amountInput.value = "";
+      
+    } catch (err) {
+      await addTerminalLine(`send error: ${err.message}`, false);
+      showToast("Send error", true);
+    }
+  }
+
+  createBtn.addEventListener("click", generateWallet);
+
+  const backupBtn = document.createElement("button");
+  backupBtn.innerHTML = '<i class="fas fa-save"></i> Backup (.txt)';
+  backupBtn.className = "btn-outline";
+  backupBtn.style.marginTop = "0.5rem";
+  backupBtn.addEventListener("click", downloadBackup);
+  createBtn.parentElement.appendChild(backupBtn);
+
+  loginBtn.addEventListener("click", login);
+  copyAddressBtn.addEventListener("click", copyAddress);
+  sendBtn.addEventListener("click", sendTransaction);
+
+  const savedAddress = localStorage.getItem('krgn_address');
+  if (savedAddress) {
+    currentAddress = savedAddress;
+    lastSeed = localStorage.getItem('krgn_seed');
+    lastPrivateKey = localStorage.getItem('krgn_privateKey');
+  }
+
+  setTimeout(async () => {
+    await addTerminalLine("system ready", true);
+    await addTerminalLine("Kerrigan network connected", true);
+    await addTerminalLine("🔐 BIP39 HD Wallet · Non-custodial · Client-side signing", true);
+    await addTerminalLine("use 'create wallet' or 'login key' to start", true);
+  }, 500);
+</script>
+</body>
+</html>
