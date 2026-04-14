@@ -4,7 +4,7 @@
 [![Non-Custodial](https://img.shields.io/badge/Non--Custodial-Yes-brightgreen)](https://github.com)
 [![Open Source](https://img.shields.io/badge/Open%20Source-Yes-blue)](https://github.com)
 
-> **A secure, non-custodial web wallet for Kerrigan (KRGN) cryptocurrency.**
+> **A secure, open source, non-custodial web wallet for Kerrigan (KRGN) cryptocurrency.**
 > 
 > *Your keys, your coins. Always.*
 
