@@ -25,6 +25,35 @@ Kerrigan Web Wallet is a **non-custodial** web-based wallet for the Kerrigan (KR
 
 ## 🏗️ Architecture
 
+Architecture Explained in Simple Words
+The system has three parts that work together:
+
+1. The User's Browser (Frontend)
+This is the screen the user sees. Private keys are generated here, transactions are signed here, and balances are displayed here. Private keys never leave this place. We never see them, we never touch them, we never store them.
+
+2. Your Server (Backend)
+This is the intermediary. It only stores public addresses (like an account number), never private keys. It verifies the user's identity and passes already-signed transactions to the node. The server cannot steal funds because it never has access to the keys.
+
+3. The Kerrigan Node (Blockchain)
+This is the network's ledger. It stores all transactions and confirms balances. Your server talks to it to check balances and send transactions.
+
+How it works step by step:
+
+To create an account, the browser generates a private key and a public address. It sends only the public address to the server. The server stores that address and returns a login key. We never ask for your private key.
+
+To check the balance, the browser asks the server for the balance using the login key. The server asks the Kerrigan node and returns the result. Your private key stays with you.
+
+To send coins, the browser signs the transaction with the private key. It sends the already-signed transaction to the server. The server forwards it to the Kerrigan node. The network confirms it. The server never sees your private key during this process.
+
+What makes us different:
+
+We care about your security. We built this wallet so that we cannot access your funds even if we wanted to. Your keys belong to you. We only relay signed transactions.
+
+We believe in transparency. The entire code is open source. Anyone can audit it. You can see exactly how we handle your data.
+
+We protect your privacy. We only store what is necessary: public addresses, login keys, and IP addresses for rate limiting. We never sell your data. We never track your transactions.
+
+The bottom line is simple. Your private keys never travel. Only already-signed transactions do. We cannot take your money. We cannot see your keys. We are here to serve you, not to control you.
 
 
 
