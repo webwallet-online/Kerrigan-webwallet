@@ -116,29 +116,34 @@ nano .env
 
 # Run the server
 python server.py
+```
 
-# RPC Configuration
+## Environment Variables
+
+Create a `.env` file with the following variables:
+
+```bash
 RPC_USER=your_rpc_username
 RPC_PASS=your_rpc_password
 RPC_PORT=7121
-
-# Flask Security
-SECRET_KEY=your_super_secret_key_here  # Generate with: python -c "import secrets; print(secrets.token_hex(32))"
-
-# Server Configuration
+SECRET_KEY=your_super_secret_key_here
 PORT=8085
+```
 
+## 📡 API Endpoints
 
-📡 API Endpoints
-Method	Endpoint	Description
-POST	/register	Register a new wallet (send ONLY public address)
-POST	/login	Authenticate with login key
-POST	/balance	Get wallet balance
-POST	/broadcast	Broadcast a signed transaction
-POST	/logout	End user session
-GET	/health	Health check endpoint
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/register` | Register a new wallet (send ONLY public address) |
+| POST | `/login` | Authenticate with login key |
+| POST | `/balance` | Get wallet balance |
+| POST | `/broadcast` | Broadcast a signed transaction |
+| POST | `/logout` | End user session |
+| GET | `/health` | Health check endpoint |
 
+## Example API Calls
 
+```bash
 # Register (client sends public address only)
 curl -X POST https://your-server.com/register \
   -H "Content-Type: application/json" \
@@ -153,8 +158,11 @@ curl -X POST https://your-server.com/login \
 curl -X POST https://your-server.com/broadcast \
   -H "Content-Type: application/json" \
   -d '{"signed_tx": "020000000001..."}'
+```
 
+## Project Structure
 
+```
 kerrigan-wallet/
 ├── server.py              # Flask backend (non-custodial)
 ├── index.html             # Frontend interface
@@ -165,57 +173,21 @@ kerrigan-wallet/
 ├── kerrigan-logo.png      # Logo asset
 ├── Conthrax-SemiBold.otf  # Custom font
 └── README.md              # This file
+```
 
+## Key Security Points in server.py
 
-Key Security Points in server.py
-Line Range	What to Verify
-200-220	No private key storage
-58-63	Session cookie security flags
-77-112	Rate limiting implementation
-153-159	Address validation
-280-310	Transaction broadcast (no key handling)
+| Line Range | What to Verify |
+|------------|----------------|
+| 200-220 | No private key storage |
+| 58-63 | Session cookie security flags |
+| 77-112 | Rate limiting implementation |
+| 153-159 | Address validation |
+| 280-310 | Transaction broadcast (no key handling) |
 
+## What You Won't Find
 
-What You Won't Find
-❌ No privkey fields in database schema
-
-❌ No endpoints that accept private keys
-
-❌ No dumpprivkey RPC calls
-
-❌ No storage of seed phrases
-
-🤝 Contributing
-Fork the repository
-
-Create your feature branch (git checkout -b feature/amazing-feature)
-
-Commit your changes (git commit -m 'Add amazing feature')
-
-Push to the branch (git push origin feature/amazing-feature)
-
-Open a Pull Request
-
-📄 License
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-⚠️ Disclaimer
-THIS SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.
-
-You are responsible for backing up your own private keys.
-
-The developers are not responsible for any loss of funds.
-
-Always verify the code before using with significant amounts.
-
-🙏 Acknowledgments
-Built with Flask, bitcoinjs-lib, and the Kerrigan blockchain
-
-Inspired by non-custodial wallet best practices
-
-Security audit recommendations from the open-source community
-
-📞 Support
-GitHub Issues: Report a bug
-
-Security Concerns: Email security@yourdomain.com
+- ❌ No `privkey` fields in database schema
+- ❌ No endpoints that accept private keys
+- ❌ No `dumpprivkey` RPC calls
+- ❌ No storage of seed phrases
