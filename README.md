@@ -73,6 +73,17 @@ The network's ledger. Stores all transactions and confirms balances. Your server
 - ✅ **Session Expiry** - Automatic logout after 2 hours of inactivity
 - ✅ **Non-Custodial by Design** - No private key storage on server
 
+## 🔍 How to Audit
+
+This wallet is 100% transparent. You can verify:
+
+1. **No private key storage** - Check `server.py` lines 200-220
+2. **No key transmission** - Search for "privkey" in the codebase
+3. **Rate limiting** - Lines 77-112 protect against spam
+4. **Address validation** - Lines 153-159 ensure valid Kerrigan addresses
+
+Run locally and inspect network traffic to confirm no keys leave your browser.
+
 ## 🚀 Quick Start
 
 ### Prerequisites
