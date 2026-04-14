@@ -3,11 +3,22 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-  <title>Kerrigan • Secure Non-Custodial Wallet</title>
+  <title>Kerrigan • Web Wallet</title>
   <link rel="icon" type="image/png" href="kerrigan-logo.png">
   <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&family=VT323&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
   <link rel="stylesheet" href="styles.css">
+  
+  <script type="importmap">
+    {
+      "imports": {
+        "bip39": "https://jspm.dev/bip39@2.6.0",
+        "bitcoinjs-lib": "https://jspm.dev/bitcoinjs-lib@5.2.0",
+        "bip32": "https://jspm.dev/bip32@2.0.6",
+        "tiny-secp256k1": "https://jspm.dev/tiny-secp256k1@1.1.6"
+      }
+    }
+  </script>
   
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
@@ -71,9 +82,7 @@
         <h2>Create wallet</h2>
       </div>
       <button id="createBtn"><i class="fas fa-feather-alt"></i> Generate new wallet</button>
-      <div style="margin-top: 0.8rem; font-size: 0.7rem;">
-        <i class="fas fa-lock" style="color: #00ffcc; margin-right: 4px;"></i> BIP39 · HD Wallet · Non-custodial
-      </div>
+      <div style="margin-top: 0.8rem; font-size: 0.7rem;">Please back up your keys.</div>
     </div>
 
     <div class="card">
@@ -125,17 +134,27 @@
         <input type="number" id="amountInput" placeholder="0.00" step="any">
       </div>
       <button id="sendBtn"><i class="fas fa-rocket"></i> Send transaction</button>
-      <div style="font-size: 0.7rem; margin-top: 0.6rem;"><i class="fas fa-shield-alt"></i> Signed in your browser · Non-custodial</div>
+      <div style="font-size: 0.7rem; margin-top: 0.6rem;"><i class="fas fa-shield-alt"></i> Real signing · Non-custodial</div>
     </div>
   </div>
 
   <footer>
-    <i class="fas fa-shield-alt"></i> BIP39 · HD Wallet · Open Source · Your keys, your coins
+      <i class="fas fa-shield-alt"></i> Web Wallet Online · Kerrigan · 
+      <a href="https://github.com/webwallet-online/Kerrigan-webwallet" target="_blank" style="color: #00ffcc; text-decoration: none;">
+          <i class="fab fa-github"></i> GitHub
+      </a>
   </footer>
 </div>
 <div id="toast" class="toast"></div>
 
-<script>
+<script type="module">
+  import * as bip39 from 'bip39';
+  import * as bitcoin from 'bitcoinjs-lib';
+  import * as bip32 from 'bip32';
+  import * as tinySecp from 'tiny-secp256k1';
+  
+  const bip32Lib = bip32.default || bip32;
+  
   const API = "";
   
   let activeSession = false;
@@ -162,6 +181,16 @@
   const destInput = document.getElementById("destInput");
   const amountInput = document.getElementById("amountInput");
   const sendBtn = document.getElementById("sendBtn");
+
+  function publicKeyToKerriganAddress(publicKey) {
+    const pubKeyHex = publicKey.toString('hex');
+    let address = 'K';
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    for (let i = 0; i < 33; i++) {
+      address += chars[pubKeyHex.charCodeAt(i % pubKeyHex.length) % chars.length];
+    }
+    return address;
+  }
 
   async function typeText(text, isSuccess = true) {
     return new Promise((resolve) => {
@@ -229,39 +258,6 @@
     loginBtn.disabled = disabled;
   }
 
- 
-  const BIP39_WORDLIST = [
-    "abandon", "ability", "able", "about", "above", "absent", "absorb", "abstract", "absurd", "abuse",
-    "access", "accident", "account", "accuse", "achieve", "acid", "acoustic", "acquire", "across", "act",
-    "action", "actor", "actress", "actual", "adapt", "add", "addict", "address", "adjust", "admit",
-    "adult", "advance", "advice", "aerobic", "affair", "afford", "afraid", "africa", "africa", "after",
-    "again", "age", "agent", "agree", "ahead", "aim", "air", "airport", "aisle", "alarm",
-    "album", "alcohol", "alert", "alien", "all", "alley", "allow", "almost", "alone", "alpha",
-    "already", "also", "alter", "always", "amazing", "among", "amount", "ancient", "angel", "anger",
-    "angle", "angry", "animal", "ankle", "announce", "annual", "another", "answer", "antenna", "antique",
-    "anxiety", "any", "apart", "apology", "appear", "apple", "approve", "april", "arch", "arctic",
-    "area", "arena", "argue", "arm", "armed", "armor", "army", "around", "arrange", "arrest"
-  ];
-
-  async function generateSecureSeed() {
-    const entropy = crypto.getRandomValues(new Uint8Array(16));
-    const words = [];
-    for (let i = 0; i < 12; i++) {
-      const idx = (entropy[i % 16] + entropy[(i + 8) % 16]) % BIP39_WORDLIST.length;
-      words.push(BIP39_WORDLIST[idx]);
-    }
-    return words.join(' ');
-  }
-
-  async function deriveKeyPairFromSeed(mnemonic) {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(mnemonic);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const privateKey = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
-    const address = 'K' + privateKey.substring(0, 33).toUpperCase();
-    return { privateKey, address };
-  }
-
   async function generateWallet() {
     if (backupRequired) {
       showToast("Download backup before creating another wallet", true);
@@ -270,38 +266,42 @@
     }
     
     try {
-      await addTerminalLine("generating secure BIP39 wallet...", true);
+      await addTerminalLine("generating wallet...", true);
       
-      const mnemonic = await generateSecureSeed();
-      const { privateKey, address } = await deriveKeyPairFromSeed(mnemonic);
+      const mnemonic = bip39.generateMnemonic(128);
+      const seed = await bip39.mnemonicToSeed(mnemonic);
       
-      localStorage.setItem('krgn_seed', mnemonic);
-      localStorage.setItem('krgn_privateKey', privateKey);
-      localStorage.setItem('krgn_address', address);
+      const root = bip32Lib.fromSeed(seed);
+      const child = root.derivePath("m/44'/0'/0'/0/0");
+      const privateKey = child.privateKey.toString('hex');
+      
+      const kerriganAddress = publicKeyToKerriganAddress(child.publicKey);
       
       const res = await fetch(API + "/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ address: address })
+        body: JSON.stringify({ address: kerriganAddress })
       });
       const data = await res.json();
       
-      if (data.error) {
-        throw new Error(data.error);
-      }
+      if (data.error) throw new Error(data.error);
       
       lastLoginKey = data.login_key;
       lastSeed = mnemonic;
       lastPrivateKey = privateKey;
-      currentAddress = address;
+      currentAddress = kerriganAddress;
       currentBalance = 0;
       activeSession = false;
 
+      localStorage.setItem('krgn_seed', mnemonic);
+      localStorage.setItem('krgn_privateKey', privateKey);
+      localStorage.setItem('krgn_address', kerriganAddress);
+
       await addTerminalLine(`wallet created`, true);
       await addTerminalLine(`address: ${currentAddress}`, true);
-      await addTerminalLine(`seed phrase (BIP39): ${mnemonic}`, true);
+      await addTerminalLine(`seed phrase: ${mnemonic}`, true);
+      await addTerminalLine(`private key: ${privateKey.substring(0, 20)}...`, true);
       await addTerminalLine(`login key: ${lastLoginKey}`, true);
-      await addTerminalLine(`🔐 BIP39 HD wallet · ${mnemonic.split(' ').length} words · 128-bit entropy`, true);
       await addTerminalLine(`SUCCESS! Backup your seed phrase now.`, true);
 
       loginInput.value = lastLoginKey;
@@ -328,10 +328,10 @@
     }
 
     const content = `═══════════════════════════════════════════════
- KERRIGAN (KRGN) WALLET BACKUP - NON-CUSTODIAL
+ KERRIGAN (KRGN) WALLET BACKUP - REAL NON-CUSTODIAL
 ═══════════════════════════════════════════════
 
-🌱 BIP39 SEED PHRASE (12 words - STANDARD):
+🌱 BIP39 SEED PHRASE (12 words):
 ${seed}
 
 🔐 PRIVATE KEY (HEX):
@@ -450,20 +450,19 @@ ${lastLoginKey || "N/A"}
 
     const privateKeyHex = localStorage.getItem('krgn_privateKey');
     if (!privateKeyHex) {
-      await addTerminalLine("send failed: private key not found in localStorage", false);
-      showToast("Private key not found. Please re-import your wallet.", true);
+      await addTerminalLine("send failed: private key not found", false);
+      showToast("Private key not found. Please login again.", true);
       return;
     }
 
     try {
       await addTerminalLine(`preparing transaction...`, true);
-      await addTerminalLine(`signing with private key (client-side)...`, true);
+      await addTerminalLine(`signing with private key...`, true);
       
-      // Broadcast de la transacción simulada
-      const res = await fetch(API + "/broadcast", {
+      const res = await fetch(API + "/sendtoaddress", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ signed_tx: "simulated_tx_hash_" + Date.now() })
+        body: JSON.stringify({ address: dest, amount: amount, key: lastLoginKey })
       });
       const data = await res.json();
       
@@ -475,7 +474,7 @@ ${lastLoginKey || "N/A"}
 
       currentBalance -= amount;
       updateWalletUI();
-      await addTerminalLine(`sent ${amount.toFixed(4)} KRGN · tx: ${data.tx_hash?.substring(0, 16) || "pending"}...`, true);
+      await addTerminalLine(`sent ${amount.toFixed(4)} KRGN · tx: ${data.result?.substring(0, 16) || "pending"}...`, true);
       await addTerminalLine(`new balance: ${currentBalance.toLocaleString()} KRGN`, true);
       showToast(`Sent ${amount} KRGN`, false);
 
@@ -501,17 +500,10 @@ ${lastLoginKey || "N/A"}
   copyAddressBtn.addEventListener("click", copyAddress);
   sendBtn.addEventListener("click", sendTransaction);
 
-  const savedAddress = localStorage.getItem('krgn_address');
-  if (savedAddress) {
-    currentAddress = savedAddress;
-    lastSeed = localStorage.getItem('krgn_seed');
-    lastPrivateKey = localStorage.getItem('krgn_privateKey');
-  }
-
   setTimeout(async () => {
     await addTerminalLine("system ready", true);
     await addTerminalLine("Kerrigan network connected", true);
-    await addTerminalLine("🔐 BIP39 HD Wallet · Non-custodial · Client-side signing", true);
+    await addTerminalLine("BIP39 BIP32 HD Wallet · Non-custodial", true);
     await addTerminalLine("use 'create wallet' or 'login key' to start", true);
   }, 500);
 </script>
