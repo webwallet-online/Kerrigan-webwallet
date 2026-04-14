@@ -159,6 +159,8 @@ apache
     ErrorLog ${APACHE_LOG_DIR}/kerrigan-error.log
     CustomLog ${APACHE_LOG_DIR}/kerrigan-access.log combined
 </VirtualHost>
+```
+
 What You Won't Find
 ❌ No privkey fields in database schema
 
