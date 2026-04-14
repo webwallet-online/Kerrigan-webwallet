@@ -206,11 +206,4 @@ Always verify the code before using with significant amounts.
 
 This is a non-custodial wallet. The server never has access to your keys.
 
-🙏 Acknowledgments
-Built with Flask and Kerrigan RPC
-
-Inspired by non-custodial wallet best practices
-
-Terminal UI design from the crypto community
-
 Made with 🔒 for the Kerrigan community
