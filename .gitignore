@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.Python
+
+# Flask
+instance/
+.flaskenv
+.env
+
+# Session files
+flask_session/
+
+# Database
+users.json
+*.db
+
+# Logs
+*.log
+server.log
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
